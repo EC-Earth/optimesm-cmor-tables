@@ -8,14 +8,16 @@
 # For examples how to call this script, run it without arguments.
 #
 
+# A few variables not included yet:
+#  grep -e LandCoverFrac -e sialb -e snowfracn ${HOME}/cmorize/ece2cmor3/ece2cmor3/scripts/add*.sh
+
 script_call_instruction_message () {
   echo
   echo " This scripts requires two arguments:"
   echo "  For the first argument there are only two options: clean-before | no-clean-before"
   echo "  The second argument changes the mip_era unless it is set to none"
-  echo "  $0 clean-before     OptimESM"
-  echo "  $0 clean-before     none"
-  echo "  $0 no-clean-before  none"
+  echo "  $0 clean-before    OptimESM"
+  echo "  $0 clean-before    none"
   echo
 }
 
@@ -24,14 +26,18 @@ if [ "$#" -eq 2 ]; then
 
  do_clean=$1
  mip_era=$2
+ mip_era_lowercase=${mip_era,,} # Convert entire string to lower case
 
  if [ ${do_clean} == 'clean-before' ] || [ ${do_clean} == 'no-clean-before' ]; then
   # See #1     https://github.com/EC-Earth/optimesm-cmor-tables/issues/#1
   # See #1333  https://dev.ec-earth.org/issues/1333
 
   if [ ${do_clean} == 'clean-before' ]; then
-   ./revert-nested-cmor-table-branch.sh
+   ./revert-modifications-to-cmor-tables.sh
   fi
+
+  # Download / sync the submodule: the CV repository:
+  git submodule update --init --recursive
 
   # Taking benefit from the work for the OptimESM project with EC-Earth3-ESM-1
   # See #811       https://github.com/EC-Earth/ece2cmor3/issues/811
@@ -52,6 +58,9 @@ if [ "$#" -eq 2 ]; then
   #  SIday sidmassth  field_ref="dmithd"   SImon sidmassth  is taken as basis
 
   table_path=./Tables
+  cv_path=CMIP6_CVs
+  cv_path_new=${mip_era}_CVs
+
   table_file_cv=CMIP6_CV.json
   table_file_SIday=CMIP6_SIday.json
   table_file_SImon=CMIP6_SImon.json
@@ -423,26 +432,62 @@ if [ "$#" -eq 2 ]; then
   #echo "  ${table_path}/${table_file_LPJGmon}"
    echo "  ${table_path}/${table_file_LPJGyr}"
    echo " This changes can be reverted by running:"
-   echo "  ./revert-nested-cmor-table-branch.sh"
+   echo "  ./revert-modifications-to-cmor-tables.sh"
    echo
 
   else
    cd ${table_path}
-   mip_era=OptimESM
-   for i in `/usr/bin/ls -1 CMIP6_*.json`; do sed -i -e "s/CMIP6/${mip_era}/g" ${i}; done
+  #for i in `/usr/bin/ls -1 CMIP6_*.json`; do sed -i  -e "s/CMIP6/${mip_era}/g"  -e "s/cmip6/${mip_era_lowercase}/g" ${i}; done
+   for i in `/usr/bin/ls -1 CMIP6_*.json`; do sed -i  -e "s/CMIP6/${mip_era}/g"                                      ${i}; done
    cd -
 
    mip_era_tables=${mip_era}-tables
    rsync -a Tables/* ${mip_era_tables}/
    for i in `/usr/bin/ls -1 ${mip_era_tables}/CMIP6_*.json`; do mv -f ${i} ${i/CMIP6/${mip_era}}; done
 
+   # Create the alternative create*CV.py script:
+   sed -e "s/CMIP6/${mip_era}/g"  -e "s/cmip6/${mip_era_lowercase}/g" scripts/createCMIP6CV.py > scripts/create${mip_era}CV.py
+
+   rsync -a ${cv_path}/* ${cv_path_new}/
+   cd ${cv_path_new}
+   for i in `/usr/bin/ls -1 CMIP6_*.json`; do mv -f ${i} ${i/CMIP6/${mip_era}}; done
+   sed -i -e "s/CMIP6/${mip_era}/g" ${mip_era}_license.json
+   sed -i -e "s/CMIP6/${mip_era}/g" mip_era.json
+   sed -i  '/"'${mip_era}'"/i \
+        "CMIP6",
+   ' mip_era.json
+   cd -
+
+   # Create the new CV file:
+   python3 ./scripts/createOptimESMCV.py &> createOptimESMCV.log
+
+   # The changes in the CMIP6 tables are reverted:"
+   ./revert-modifications-to-cmor-tables.sh
+
+   if false; then
+    # Check during developent:
+    diff OptimESM_CV.json            bup/OptimESM_CV.json
+    diff createOptimESMCV.log        bup/createOptimESMCV.log
+    diff scripts/createOptimESMCV.py bup/createOptimESMCV.py
+    diff -r OptimESM_CVs/            bup/OptimESM_CVs/
+    diff -r OptimESM-tables/         bup/OptimESM-tables/
+    rm -f  OptimESM_CV.json
+    rm -fr OptimESM_CVs/
+    rm -fr OptimESM-tables/
+    rm -f  scripts/createOptimESMCV.py
+   fi
+   rm -f  createOptimESMCV.log
+
    echo
    echo " Running:"
    echo "  $0 ${do_clean} ${mip_era}"
-   echo " has adjusted the files:"
-   git status ${table_path} | grep -v -e git -e staged -e branch
-   echo " This changes can be reverted by running:"
-   echo "  ./revert-nested-cmor-table-branch.sh"
+   echo
+   echo " The following ${mip_era} directories have been created:"
+   echo "  OptimESM_CVs/"
+   echo "  OptimESM-tables/"
+   echo " The following ${mip_era} script & CV file have been created:"
+   echo "  createOptimESMCV.py"
+   echo "  OptimESM_CV.json"
    echo
   fi
 
