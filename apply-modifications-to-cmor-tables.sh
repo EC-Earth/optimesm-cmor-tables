@@ -7,28 +7,32 @@
 #
 # For examples how to call this script, run it without arguments.
 #
+# See: https://github.com/EC-Earth/optimesm-cmor-tables/edit/main/README-optimesm.md
+#
 
 # A few variables not included yet:
 #  grep -e LandCoverFrac -e sialb -e snowfracn ${HOME}/cmorize/ece2cmor3/ece2cmor3/scripts/add*.sh
 
 script_call_instruction_message () {
   echo
-  echo " This scripts requires two arguments:"
+  echo " This scripts requires three arguments:"
   echo "  For the first argument there are only two options: clean-before | no-clean-before"
   echo "  The second argument changes the mip_era unless it is set to none"
-  echo "  $0 clean-before    OptimESM"
-  echo "  $0 clean-before    none"
+  echo "  For the third argument there are only two options: extra-ece | no-extra-ece"
+  echo "  $0 clean-before OptimESM no-extra-ece"
+  echo "  $0 clean-before none     extra-ece"
   echo
 }
 
 
-if [ "$#" -eq 2 ]; then
+if [ "$#" -eq 3 ]; then
 
  do_clean=$1
  mip_era=$2
+ extra_ece=$3
  mip_era_lowercase=${mip_era,,} # Convert entire string to lower case
 
- if [ ${do_clean} == 'clean-before' ] || [ ${do_clean} == 'no-clean-before' ]; then
+ if [ ${do_clean} == 'clean-before' ] || [ ${do_clean} == 'no-clean-before' ]  [ ${extra_ece} == 'extra-ece' ] || [ ${extra_ece} == 'no-extra-ece' ]; then
   # See #1     https://github.com/EC-Earth/optimesm-cmor-tables/issues/#1
   # See #1333  https://dev.ec-earth.org/issues/1333
 
@@ -56,6 +60,7 @@ if [ "$#" -eq 2 ]; then
   #  SIday sidivvel   field_ref="idive"    SImon sidivvel   is taken as basis
   #  SIday sidmassdyn field_ref="dmidyn"   SImon sidmassdyn is taken as basis
   #  SIday sidmassth  field_ref="dmithd"   SImon sidmassth  is taken as basis
+  #  SIday sirdgconc  field_ref="dummy_XY" SImon sirdgconc  is taken as basis  # not available for ECE (not identified in NEMO)
 
   table_path=./Tables
   cv_path=CMIP6_CVs
@@ -65,26 +70,28 @@ if [ "$#" -eq 2 ]; then
   table_file_SIday=CMIP6_SIday.json
   table_file_SImon=CMIP6_SImon.json
   table_file_Omon=CMIP6_Omon.json
-  tmp_file_SIday=CMIP6_SIday_tmp.json
+  table_file_OPTSIday=CMIP6_OPTSIday.json
 
   table_file_Eyr=CMIP6_Eyr.json
   table_file_Emon=CMIP6_Emon.json
- #table_file_LPJGday=CMIP6_Lday.json
- #table_file_LPJGmon=CMIP6_LLmon.json
-  table_file_LPJGyr=CMIP6_Lyr.json
+  table_file_LPJGday=CMIP6_LPJGday.json
+  table_file_LPJGmon=CMIP6_LPJGmon.json
+  table_file_OPTLyr=CMIP6_OPTLyr.json
 
   cd ${table_path}
   if [ ${do_clean} == 'clean-before' ]; then
    git checkout ${table_file_cv}
-   git checkout ${table_file_SIday}
+  #git checkout ${table_file_SIday}
    git checkout ${table_file_SImon}
    git checkout ${table_file_Omon}
 
    git checkout ${table_file_Eyr}
    git checkout ${table_file_Emon}
-  #rm -f ${table_file_LPJGday}
-  #rm -f ${table_file_LPJGmon}
-   rm -f ${table_file_LPJGyr}
+   if [ ${extra_ece} == 'extra-ece' ]; then
+    rm -f ${table_file_LPJGday}
+    rm -f ${table_file_LPJGmon}
+   fi
+   rm -f ${table_file_OPTLyr}
   fi
 
 
@@ -94,23 +101,29 @@ if [ "$#" -eq 2 ]; then
             "dayPt":"sampled monthly, at specified time point within the time period",
   ' ${table_file_cv}
 
-  # Add all of the CMIP6_SIday.json except its last 3 lines to the tmp file:
-  head -n -3 ${table_file_SIday}                                                                         >  ${tmp_file_SIday}
-  echo '        }, '                                                                                     >> ${tmp_file_SIday}
 
-  grep -A 17 '"sishevel":'   CMIP6_SImon.json  | sed -e 's/"frequency": "monPt"/"frequency": "dayPt"/g'  >> ${tmp_file_SIday}
-  grep -A 17 '"sidconcdyn":' CMIP6_SImon.json  | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${tmp_file_SIday}
-  grep -A 17 '"sidconcth":'  CMIP6_SImon.json  | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${tmp_file_SIday}
-  grep -A 17 '"sidivvel":'   CMIP6_SImon.json  | sed -e 's/"frequency": "monPt"/"frequency": "dayPt"/g'  >> ${tmp_file_SIday}
-  grep -A 17 '"sidmassdyn":' CMIP6_SImon.json  | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${tmp_file_SIday}
-  grep -A 16 '"sidmassth":'  CMIP6_SImon.json  | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${tmp_file_SIday}
+  sed -i  '/"Oclim"/i \
+            "OPTSIday",
+  ' ${table_file_cv}
+
+  # Add all of the CMIP6_SIday.json except its last 3 lines to the tmp file:
+  head -n 16 ${table_file_SIday}                                                                           >  ${table_file_OPTSIday}
+  echo '        }, '                                                                                       >> ${table_file_OPTSIday}
+
+  grep -A 17 '"sirdgconc":'  ${table_file_SImon} | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${table_file_OPTSIday}  # not available for ECE (not identified in NEMO)
+  grep -A 17 '"sishevel":'   ${table_file_SImon} | sed -e 's/"frequency": "monPt"/"frequency": "dayPt"/g'  >> ${table_file_OPTSIday}
+  grep -A 17 '"sidconcdyn":' ${table_file_SImon} | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${table_file_OPTSIday}
+  grep -A 17 '"sidconcth":'  ${table_file_SImon} | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${table_file_OPTSIday}
+  grep -A 17 '"sidivvel":'   ${table_file_SImon} | sed -e 's/"frequency": "monPt"/"frequency": "dayPt"/g'  >> ${table_file_OPTSIday}
+  grep -A 17 '"sidmassdyn":' ${table_file_SImon} | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${table_file_OPTSIday}
+  grep -A 16 '"sidmassth":'  ${table_file_SImon} | sed -e 's/"frequency": "mon"/"frequency": "day"/g'      >> ${table_file_OPTSIday}
 
   # Add closing part of CMIP6 table json file:
-  echo '        } '                                                                                      >> ${tmp_file_SIday}
-  echo '    } '                                                                                          >> ${tmp_file_SIday}
-  echo '} '                                                                                              >> ${tmp_file_SIday}
+  echo '        } '                                                                                        >> ${table_file_OPTSIday}
+  echo '    } '                                                                                            >> ${table_file_OPTSIday}
+  echo '} '                                                                                                >> ${table_file_OPTSIday}
 
-  mv -f ${tmp_file_SIday} ${table_file_SIday}
+  sed -i -e 's/Table SIday/Table OPTSIday/'                                                                   ${table_file_OPTSIday}
 
 
   # SImon sfdsi has been used as template:
@@ -289,127 +302,134 @@ if [ "$#" -eq 2 ]; then
 
 
 
-  sed -i  '/"Lmon"/i \
-#           "LPJGday", \
-#           "LPJGmon", \
-            "LPJGyr",
+  sed -i  '/"OPTSIday"/i \
+            "OPTLyr",
   ' ${table_file_cv}
 
 
-# # Add CMIP6 LPJGday table header:
-# echo '{                                              ' | sed 's/\s*$//g' >  ${table_file_LPJGday}
-# echo '    "Header": {                                ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "data_specs_version": "01.00.33",      ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "cmor_version": "3.5",                 ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "table_id": "Table LPJGday",           ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "realm": "land",                       ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "table_date": "18 November 2020",      ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "missing_value": "1e20",               ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "int_missing_value": "-999",           ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "product": "model-output",             ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "approx_interval": "1.00000",          ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "generic_levels": "",                  ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "mip_era": "CMIP6",                    ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '        "Conventions": "CF-1.7 CMIP-6.2"       ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  if [ ${extra_ece} == 'extra-ece' ]; then
+  sed -i  '/"Lmon"/i \
+            "LPJGday", \
+            "LPJGmon",
+  ' ${table_file_cv}
 
-# grep -A 17 -e '"ec":'    CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #  Eday  ec          => LPJGday
-# grep -A 17 -e '"mrsll":' CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        mrsll       => LPJGday   Eday
-# grep -A 17 -e '"mrso":'  CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrso        => LPJGday
-# grep -A 17 -e '"mrsol":' CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #  Eday  mrsol       => LPJGday
-# grep -A 17 -e '"mrsos":' CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrsos       => LPJGday
-# grep -A 17 -e '"mrro":'  CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrro        => LPJGday
-# grep -A 17 -e '"tran":'  CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        tran        => LPJGday
-# grep -A 16 -e '"tsl":'   CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        tsl         => LPJGday
+  # Add CMIP6 LPJGday table header:
+  echo '{                                              ' | sed 's/\s*$//g' >  ${table_file_LPJGday}
+  echo '    "Header": {                                ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "data_specs_version": "01.00.33",      ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "cmor_version": "3.5",                 ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "table_id": "Table LPJGday",           ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "realm": "land",                       ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "table_date": "18 November 2020",      ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "missing_value": "1e20",               ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "int_missing_value": "-999",           ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "product": "model-output",             ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "approx_interval": "1.00000",          ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "generic_levels": "",                  ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "mip_era": "CMIP6",                    ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '        "Conventions": "CF-1.7 CMIP-6.2"       ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
 
-# # Add closing part of CMIP6 table json file:
-# echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '    }                                          ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-# echo '}                                              ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
-
-
-# # Add CMIP6 LPJGmon table header:
-# echo '{                                              ' | sed 's/\s*$//g' >  ${table_file_LPJGmon}
-# echo '    "Header": {                                ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "data_specs_version": "01.00.33",      ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "cmor_version": "3.5",                 ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "table_id": "Table LPJGmon",           ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "realm": "land",                       ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "table_date": "18 November 2020",      ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "missing_value": "1e20",               ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "int_missing_value": "-999",           ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "product": "model-output",             ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "approx_interval": "30.00000",         ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "generic_levels": "",                  ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "mip_era": "CMIP6",                    ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '        "Conventions": "CF-1.7 CMIP-6.2"       ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-
-# grep -A 17 -e '"evspsbl":'    CMIP6_Amon.json                            >> ${table_file_LPJGmon}  #  Amon  evspsbl     => LPJGmon
-# grep -A 17 -e '"evspsblpot":' CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #  Emon  evspsblpot  => LPJGmon
-# grep -A 17 -e '"evspsblsoi":' CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        evspsblsoi  => LPJGmon   Lmon
-# grep -A 17 -e '"fco2nat":'    CMIP6_Amon.json                            >> ${table_file_LPJGmon}  #                                 Amon
-# grep -A 17 -e '"mrroLut":'    CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #  Emon  mrroLut     => LPJGmon
-# grep -A 17 -e '"mrsll":'      CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsll       => LPJGmon   Emon
-# grep -A 17 -e '"mrsol":'      CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsol       => LPJGmon
-# grep -A 17 -e '"mrsoLut":'    CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsoLut     => LPJGmon
-# grep -A 17 -e '"mrsosLut":'   CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsosLut    => LPJGmon
-# grep -A 17 -e '"mrro":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrro        => LPJGmon
-# grep -A 17 -e '"mrros":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrros       => LPJGmon
-# grep -A 17 -e '"mrso":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrso        => LPJGmon
-# grep -A 17 -e '"mrfso":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrfso       => LPJGmon
-# grep -A 17 -e '"mrsos":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrsos       => LPJGmon
-# grep -A 17 -e '"snc":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snc         => LPJGmon
-# grep -A 17 -e '"snd":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snd         => LPJGmon
-# grep -A 17 -e '"snw":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snw         => LPJGmon
-# grep -A 17 -e '"tran":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        tran        => LPJGmon
-# grep -A 16 -e '"tsl":'        CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        tsl         => LPJGmon
-
-# # Add closing part of CMIP6 table json file:
-# echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '    }                                          ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-# echo '}                                              ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
-
-  # Add CMIP6 LPJGyr table header:
-  echo '{                                              ' | sed 's/\s*$//g' >  ${table_file_LPJGyr}
-  echo '    "Header": {                                ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "data_specs_version": "01.00.33",      ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "cmor_version": "3.5",                 ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "table_id": "Table LPJGyr",            ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "realm": "land",                       ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "table_date": "18 November 2020",      ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "missing_value": "1e20",               ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "int_missing_value": "-999",           ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "product": "model-output",             ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "approx_interval": "365",              ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "generic_levels": "",                  ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "mip_era": "CMIP6",                    ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '        "Conventions": "CF-1.7 CMIP-6.2"       ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-
-  grep -A 16 -e '"pastureFrac":' CMIP6_Lmon.json                           >> ${table_file_LPJGyr}  # Eyr    pastureFrac => LPJGyr    # Only Lmon pastureFrac
-  sed -i -e 's/mon/yr/'                                                       ${table_file_LPJGyr}
+  grep -A 17 -e '"ec":'    CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #  Eday  ec          => LPJGday
+  grep -A 17 -e '"mrsll":' CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        mrsll       => LPJGday   Eday
+  grep -A 17 -e '"mrso":'  CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrso        => LPJGday
+  grep -A 17 -e '"mrsol":' CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #  Eday  mrsol       => LPJGday
+  grep -A 17 -e '"mrsos":' CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrsos       => LPJGday
+  grep -A 17 -e '"mrro":'  CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrro        => LPJGday
+  grep -A 17 -e '"tran":'  CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        tran        => LPJGday
+  grep -A 16 -e '"tsl":'   CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        tsl         => LPJGday
 
   # Add closing part of CMIP6 table json file:
-  echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '    }                                          ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
-  echo '}                                              ' | sed 's/\s*$//g' >> ${table_file_LPJGyr}
+  echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '    }                                          ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+  echo '}                                              ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
+
+
+  # Add CMIP6 LPJGmon table header:
+  echo '{                                              ' | sed 's/\s*$//g' >  ${table_file_LPJGmon}
+  echo '    "Header": {                                ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "data_specs_version": "01.00.33",      ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "cmor_version": "3.5",                 ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "table_id": "Table LPJGmon",           ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "realm": "land",                       ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "table_date": "18 November 2020",      ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "missing_value": "1e20",               ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "int_missing_value": "-999",           ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "product": "model-output",             ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "approx_interval": "30.00000",         ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "generic_levels": "",                  ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "mip_era": "CMIP6",                    ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '        "Conventions": "CF-1.7 CMIP-6.2"       ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+
+  grep -A 17 -e '"evspsbl":'    CMIP6_Amon.json                            >> ${table_file_LPJGmon}  #  Amon  evspsbl     => LPJGmon
+  grep -A 17 -e '"evspsblpot":' CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #  Emon  evspsblpot  => LPJGmon
+  grep -A 17 -e '"evspsblsoi":' CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        evspsblsoi  => LPJGmon   Lmon
+  grep -A 17 -e '"fco2nat":'    CMIP6_Amon.json                            >> ${table_file_LPJGmon}  #                                 Amon
+  grep -A 17 -e '"mrroLut":'    CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #  Emon  mrroLut     => LPJGmon
+  grep -A 17 -e '"mrsll":'      CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsll       => LPJGmon   Emon
+  grep -A 17 -e '"mrsol":'      CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsol       => LPJGmon
+  grep -A 17 -e '"mrsoLut":'    CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsoLut     => LPJGmon
+  grep -A 17 -e '"mrsosLut":'   CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsosLut    => LPJGmon
+  grep -A 17 -e '"mrro":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrro        => LPJGmon
+  grep -A 17 -e '"mrros":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrros       => LPJGmon
+  grep -A 17 -e '"mrso":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrso        => LPJGmon
+  grep -A 17 -e '"mrfso":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrfso       => LPJGmon
+  grep -A 17 -e '"mrsos":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrsos       => LPJGmon
+  grep -A 17 -e '"snc":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snc         => LPJGmon
+  grep -A 17 -e '"snd":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snd         => LPJGmon
+  grep -A 17 -e '"snw":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snw         => LPJGmon
+  grep -A 17 -e '"tran":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        tran        => LPJGmon
+  grep -A 16 -e '"tsl":'        CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        tsl         => LPJGmon
+
+  # Add closing part of CMIP6 table json file:
+  echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '    }                                          ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+  echo '}                                              ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
+fi
+
+  # Add CMIP6 OPTLyr table header:
+  echo '{                                              ' | sed 's/\s*$//g' >  ${table_file_OPTLyr}
+  echo '    "Header": {                                ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "data_specs_version": "01.00.33",      ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "cmor_version": "3.5",                 ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "table_id": "Table OPTLyr",            ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "realm": "land",                       ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "table_date": "18 November 2020",      ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "missing_value": "1e20",               ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "int_missing_value": "-999",           ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "product": "model-output",             ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "approx_interval": "365",              ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "generic_levels": "",                  ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "mip_era": "CMIP6",                    ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '        "Conventions": "CF-1.7 CMIP-6.2"       ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+
+  grep -A 16 -e '"pastureFrac":' CMIP6_Lmon.json                           >> ${table_file_OPTLyr}  # Eyr    pastureFrac => LPJGyr    # Only Lmon pastureFrac
+  sed -i -e 's/mon/yr/'                                                       ${table_file_OPTLyr}
+
+  # Add closing part of CMIP6 table json file:
+  echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '    }                                          ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
+  echo '}                                              ' | sed 's/\s*$//g' >> ${table_file_OPTLyr}
 
 
   # Remove the trailing spaces of the inserted block above:
   sed -i -e 's/\s*$//g'                ${table_file_cv}
-  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SIday}
+ #sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SIday}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SImon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Omon}
 
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Eyr}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Emon}
- #sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_LPJGday}
- #sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_LPJGmon}
-  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_LPJGyr}
+  if [ ${extra_ece} == 'extra-ece' ]; then
+   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_LPJGday}
+   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_LPJGmon}
+  fi
+  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OPTLyr}
 
   cd -
 
@@ -422,15 +442,17 @@ if [ "$#" -eq 2 ]; then
    echo "  $0 ${do_clean} ${mip_era}"
    echo " has adjusted the files:"
    echo "  ${table_path}/${table_file_cv}"
-   echo "  ${table_path}/${table_file_SIday}"
+  #echo "  ${table_path}/${table_file_SIday}"
    echo "  ${table_path}/${table_file_SImon}"
    echo "  ${table_path}/${table_file_Omon}"
    echo "  ${table_path}/${table_file_Eyr}"
    echo "  ${table_path}/${table_file_Emon}"
    echo " and added the files:"
-  #echo "  ${table_path}/${table_file_LPJGday}"
-  #echo "  ${table_path}/${table_file_LPJGmon}"
-   echo "  ${table_path}/${table_file_LPJGyr}"
+   if [ ${extra_ece} == 'extra-ece' ]; then
+    echo "  ${table_path}/${table_file_LPJGday}"
+    echo "  ${table_path}/${table_file_LPJGmon}"
+   fi
+   echo "  ${table_path}/${table_file_OPTLyr}"
    echo " This changes can be reverted by running:"
    echo "  ./revert-modifications-to-cmor-tables.sh"
    echo
