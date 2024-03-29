@@ -33,6 +33,13 @@
 #   SIday sidmassth  field_ref="dmithd"   SImon sidmassth  is taken as basis
 #   SIday sirdgconc  field_ref="dummy_XY" SImon sirdgconc  is taken as basis  # not available for ECE (not identified in NEMO)
 
+# Overview of added atmos variables:
+# See #785  https://github.com/EC-Earth/ece2cmor3/issues/785
+# See #792  https://github.com/EC-Earth/ece2cmor3/pull/792
+#  Add:
+#   co2mass
+#   co2s
+
 # Overview of added ECE LPJG variables:
 #  See #778      https://github.com/EC-Earth/ece2cmor3/issues/#778
 #  See #794      https://github.com/EC-Earth/ece2cmor3/issues/794
@@ -121,8 +128,10 @@ if [ "$#" -eq 3 ]; then
   table_file_cv=CMIP6_CV.json
   table_file_SIday=CMIP6_SIday.json
   table_file_SImon=CMIP6_SImon.json
+  table_file_day=CMIP6_day.json
   table_file_Omon=CMIP6_Omon.json
   table_file_OptSIday=CMIP6_OptSIday.json
+  table_file_Optday=CMIP6_Optday.json
 
   table_file_Eyr=CMIP6_Eyr.json
   table_file_Emon=CMIP6_Emon.json
@@ -149,7 +158,7 @@ if [ "$#" -eq 3 ]; then
             "OptSIday",
   ' ${table_file_cv}
 
-  # Add all of the CMIP6_SIday.json except its last 3 lines to the tmp file:
+  # Add CMIP6_SIday.json header:
   head -n 16 ${table_file_SIday}                                                                           >  ${table_file_OptSIday}
   echo '        }, '                                                                                       >> ${table_file_OptSIday}
 
@@ -190,6 +199,57 @@ if [ "$#" -eq 3 ]; then
             "ok_max_mean_abs": ""                                                               \
         }, 
   ' ${table_file_SImon}
+
+
+  # Taken from add-variables-for-co2box.sh:
+
+  # Add CMIP6_day.json header:
+  head -n 16 ${table_file_day}                                                                             >  ${table_file_Optday}
+
+  sed -i  '/"variable_entry": {/a \
+        "co2mass": {                                                   \
+            "frequency": "day",                                        \
+            "modeling_realm": "atmos",                                 \
+            "standard_name": "atmosphere_mass_of_carbon_dioxide",      \
+            "units": "kg",                                             \
+            "cell_methods": "area: time: mean",                        \
+            "cell_measures": "",                                       \
+            "long_name": "Total Atmospheric Mass of CO2",              \
+            "comment": "Total atmospheric mass of Carbon Dioxide",     \
+            "dimensions": "time",                                      \
+            "out_name": "co2mass",                                     \
+            "type": "real",                                            \
+            "positive": "",                                            \
+            "valid_min": "",                                           \
+            "valid_max": "",                                           \
+            "ok_min_mean_abs": "",                                     \
+            "ok_max_mean_abs": ""                                      \
+        },                                                             \
+        "co2s": {                                                      \
+            "frequency": "day",                                        \
+            "modeling_realm": "atmos",                                 \
+            "standard_name": "mole_fraction_of_carbon_dioxide_in_air", \
+            "units": "1e-06",                                          \
+            "cell_methods": "time: mean",                              \
+            "cell_measures": "area: areacella",                        \
+            "long_name": "Atmosphere CO2",                             \
+            "comment": "As co2, but only at the surface",              \
+            "dimensions": "longitude latitude time",                   \
+            "out_name": "co2s",                                        \
+            "type": "real",                                            \
+            "positive": "",                                            \
+            "valid_min": "",                                           \
+            "valid_max": "",                                           \
+            "ok_min_mean_abs": "",                                     \
+            "ok_max_mean_abs": ""                                      \
+        }
+  ' ${table_file_Optday}
+
+  # Add closing part of CMIP6 table json file:
+  echo '    } '                                                                                            >> ${table_file_Optday}
+  echo '} '                                                                                                >> ${table_file_Optday}
+
+  sed -i -e 's/Table day/Table Optday/'                                                                       ${table_file_Optday}
 
 
   # Add four ocean variables to the Omon table:
@@ -540,6 +600,8 @@ if [ "$#" -eq 3 ]; then
  #sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SIday}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SImon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Omon}
+  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptSIday}
+  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Optday}
 
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Eyr}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Emon}
@@ -562,7 +624,6 @@ if [ "$#" -eq 3 ]; then
    echo "  $0 ${do_clean} ${mip_era} ${extra_ece}"
    echo " has adjusted the files:"
    echo "  ${table_path}/${table_file_cv}"
-  #echo "  ${table_path}/${table_file_SIday}"
    echo "  ${table_path}/${table_file_SImon}"
    echo "  ${table_path}/${table_file_Omon}"
    echo "  ${table_path}/${table_file_Eyr}"
