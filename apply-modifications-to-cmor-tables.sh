@@ -131,6 +131,7 @@ if [ "$#" -eq 3 ]; then
   table_file_day=CMIP6_day.json
   table_file_Omon=CMIP6_Omon.json
   table_file_OptSIday=CMIP6_OptSIday.json
+  table_file_OptSImon=CMIP6_OptSImon.json
   table_file_Optday=CMIP6_Optday.json
   table_file_OptOmon=CMIP6_OptOmon.json
 
@@ -179,8 +180,16 @@ if [ "$#" -eq 3 ]; then
   sed -i -e 's/Table SIday/Table OptSIday/'                                                                   ${table_file_OptSIday}
 
 
+  # Add the SImon variables in a separate table:
+  sed -i  '/"OptSIday"/a \
+            "OptSImon",
+  ' ${table_file_cv}
+
+  # Add CMIP6_SImon.json header:
+  head -n 16 ${table_file_SImon}                                                                           >  ${table_file_OptSImon}
+
   # SImon sfdsi has been used as template:
-  sed -i  '/"sidmassdyn": {/i \
+  sed -i  '/"variable_entry": {/a \
         "siflsaltbot": {                                                                        \
             "frequency": "mon",                                                                 \
             "modeling_realm": "seaIce",                                                         \
@@ -198,12 +207,17 @@ if [ "$#" -eq 3 ]; then
             "valid_max": "",                                                                    \
             "ok_min_mean_abs": "",                                                              \
             "ok_max_mean_abs": ""                                                               \
-        }, 
-  ' ${table_file_SImon}
+        }
+  ' ${table_file_OptSImon}
+
+  # Add closing part of CMIP6 table json file:
+  echo '    } '                                                                                            >> ${table_file_OptSImon}
+  echo '} '                                                                                                >> ${table_file_OptSImon}
+
+  sed -i -e 's/Table SImon/Table OptSImon/'                                                                   ${table_file_OptSImon}
 
 
   # Taken from add-variables-for-co2box.sh:
-
 
   # Add the day variables in a separate table:
   sed -i  '/"Oyr"/i \
@@ -611,8 +625,8 @@ if [ "$#" -eq 3 ]; then
 
   # Remove the trailing spaces of the inserted block above:
   sed -i -e 's/\s*$//g'                ${table_file_cv}
-  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SImon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptSIday}
+  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptSImon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Optday}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptOmon}
 
@@ -637,11 +651,11 @@ if [ "$#" -eq 3 ]; then
    echo "  $0 ${do_clean} ${mip_era} ${extra_ece}"
    echo " has adjusted the files:"
    echo "  ${table_path}/${table_file_cv}"
-   echo "  ${table_path}/${table_file_SImon}"
    echo "  ${table_path}/${table_file_Eyr}"
    echo "  ${table_path}/${table_file_Emon}"
    echo " and added the files:"
    echo "  ${table_path}/${table_file_OptSIday}"
+   echo "  ${table_path}/${table_file_OptSImon}"
    echo "  ${table_path}/${table_file_Optday}"
    echo "  ${table_path}/${table_file_OptOmon}"
    echo "  ${table_path}/${table_file_OptLyr}"
@@ -685,18 +699,6 @@ if [ "$#" -eq 3 ]; then
    # The changes in the CMIP6 tables are reverted:"
    ./revert-modifications-to-cmor-tables.sh
 
-   if false; then
-    # Check during developent:
-    diff OptimESM_CV.json            bup/OptimESM_CV.json
-    diff createOptimESMCV.log        bup/createOptimESMCV.log
-    diff scripts/createOptimESMCV.py bup/createOptimESMCV.py
-    diff -r OptimESM_CVs/            bup/OptimESM_CVs/
-    diff -r OptimESM-tables/         bup/OptimESM-tables/
-    rm -f  OptimESM_CV.json
-    rm -fr OptimESM_CVs/
-    rm -fr OptimESM-tables/
-    rm -f  scripts/createOptimESMCV.py
-   fi
    rm -f  createOptimESMCV.log
 
    echo
