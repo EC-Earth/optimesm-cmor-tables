@@ -154,7 +154,7 @@ if [ "$#" -eq 3 ]; then
 
 
   # Add the SIday variables in a separate table:
-  sed -i  '/"Oclim"/i \
+  sed -i  '/"Omon"/a \
             "OptSIday",
   ' ${table_file_cv}
 
@@ -202,6 +202,13 @@ if [ "$#" -eq 3 ]; then
 
 
   # Taken from add-variables-for-co2box.sh:
+
+
+  # Add the day variables in a separate table:
+  sed -i  '/"Oyr"/i \
+            "Optday",
+  ' ${table_file_cv}
+
 
   # Add CMIP6_day.json header:
   head -n 16 ${table_file_day}                                                                             >  ${table_file_Optday}
@@ -406,7 +413,7 @@ if [ "$#" -eq 3 ]; then
 
 
   # Adding the OptLyr (LPJGyr) table:
-  sed -i  '/"OptSIday"/i \
+  sed -i  '/"Omon"/a \
             "OptLyr",
   ' ${table_file_cv}
 
@@ -439,9 +446,9 @@ if [ "$#" -eq 3 ]; then
 
   if [ ${extra_ece} == 'extra-ece' ]; then
    # Adding the LPJG tables:
-   sed -i  '/"Lmon"/i \
-             "LPJGday", \
-             "LPJGmon",
+   sed -i '/"Lmon"/i \
+            "LPJGday", \
+            "LPJGmon",
    ' ${table_file_cv}
 
    # Add CMIP6 LPJGday table header:
@@ -524,9 +531,9 @@ if [ "$#" -eq 3 ]; then
   # Taken from add-htessel-vegetation-variables.sh:
 
    # Adding the HTESSEL tables:
-   sed -i  '/"IfxAnt"/i \
-             "HTESSELday", \
-             "HTESSELmon",
+   sed -i '/"IfxAnt"/i \
+            "HTESSELday", \
+            "HTESSELmon",
    ' ${table_file_cv}
 
    # Add CMIP6 HTESSELday table header:
