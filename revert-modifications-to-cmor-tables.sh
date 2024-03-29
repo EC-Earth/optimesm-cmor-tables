@@ -28,6 +28,31 @@
 #  git status
 #  git push origin main
 
+# History of the getting the upstream changes including those from the CMIP6_CVs submodule. This is the log of the
+# probably not most efficient way to do this, however the final result was a correct update.
+#  git checkout main
+#  git fetch upstream
+#  git rebase upstream/main
+#  git add CMIP6_CVs
+#  git pull
+#  git push origin main
+#  git pull
+#  git config pull.rebase false
+#  git pull
+#  cd CMIP6_CVs/
+#  git pull origin main
+#  git pull
+#  gitc main
+#  git pull
+#  cd ../
+#  git add CMIP6_CVs
+#  git fetch upstream
+#  git rebase upstream/main
+#  git push origin main
+#  git pull
+#  git log
+#  git push
+
 
 if [ "$#" -eq 0 ]; then
 
