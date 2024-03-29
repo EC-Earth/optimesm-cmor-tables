@@ -135,7 +135,6 @@ if [ "$#" -eq 3 ]; then
   table_file_Optday=CMIP6_Optday.json
   table_file_OptOmon=CMIP6_OptOmon.json
 
-  table_file_Eyr=CMIP6_Eyr.json
   table_file_Emon=CMIP6_Emon.json
 
   table_file_OptLyr=CMIP6_OptLyr.json
@@ -368,46 +367,6 @@ if [ "$#" -eq 3 ]; then
 
   # Taken from add-lpjg-cc-diagnostics.sh:
 
-  # CHECK metadata: comment - ocean cells
-  sed -i  '/"cLitter": {/i \
-        "cFluxYr": {                                                                                                                   \
-            "frequency": "yr",                                                                                                         \
-            "modeling_realm": "land",                                                                                                  \
-            "standard_name": "cFluxYr",                                                                                                \
-            "units": "kg m-2 yr-1",                                                                                                    \
-            "cell_methods": "area: mean where land time: mean",                                                                        \
-            "cell_measures": "area: areacella",                                                                                        \
-            "long_name": "cFluxYr",                                                                                                    \
-            "comment": "",                                                                                                             \
-            "dimensions": "longitude latitude time",                                                                                   \
-            "out_name": "cFluxYr",                                                                                                     \
-            "type": "real",                                                                                                            \
-            "positive": "",                                                                                                            \
-            "valid_min": "",                                                                                                           \
-            "valid_max": "",                                                                                                           \
-            "ok_min_mean_abs": "",                                                                                                     \
-            "ok_max_mean_abs": ""                                                                                                      \
-        },                                                                                                                             \
-        "cLandYr": {                                                                                                                   \
-            "frequency": "yr",                                                                                                         \
-            "modeling_realm": "land",                                                                                                  \
-            "standard_name": "mass_content_of_carbon_in_vegetation_and_litter_and_soil_and_forestry_and_agricultural_products",        \
-            "units": "kg m-2",                                                                                                         \
-            "cell_methods": "area: mean where land time: mean",                                                                        \
-            "cell_measures": "area: areacella",                                                                                        \
-            "long_name": "Total Carbon in All Terrestrial Carbon Pools",                                                               \
-            "comment": "Report missing data over ocean grid cells. For fractional land report value averaged over the land fraction.", \
-            "dimensions": "longitude latitude time",                                                                                   \
-            "out_name": "cLandYr",                                                                                                     \
-            "type": "real",                                                                                                            \
-            "positive": "",                                                                                                            \
-            "valid_min": "",                                                                                                           \
-            "valid_max": "",                                                                                                           \
-            "ok_min_mean_abs": "",                                                                                                     \
-            "ok_max_mean_abs": ""                                                                                                      \
-        },
-  ' ${table_file_Eyr}
-
   sed -i  '/"cLitterCwd": {/i \
         "cLand1st": {                                                                                                                  \
             "frequency": "mon",                                                                                                        \
@@ -455,6 +414,47 @@ if [ "$#" -eq 3 ]; then
   echo '        "Conventions": "CF-1.7 CMIP-6.2"       ' | sed 's/\s*$//g' >> ${table_file_OptLyr}
   echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_OptLyr}
   echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_OptLyr}
+
+  # CHECK metadata: comment - ocean cells
+  # The Eyr cFluxYr & cLandYr (from add-lpjg-cc-diagnostics.sh) have been added to the OptLyr table:
+  sed -i  '/"variable_entry": {/a \
+        "cFluxYr": {                                                                                                                   \
+            "frequency": "yr",                                                                                                         \
+            "modeling_realm": "land",                                                                                                  \
+            "standard_name": "cFluxYr",                                                                                                \
+            "units": "kg m-2 yr-1",                                                                                                    \
+            "cell_methods": "area: mean where land time: mean",                                                                        \
+            "cell_measures": "area: areacella",                                                                                        \
+            "long_name": "cFluxYr",                                                                                                    \
+            "comment": "",                                                                                                             \
+            "dimensions": "longitude latitude time",                                                                                   \
+            "out_name": "cFluxYr",                                                                                                     \
+            "type": "real",                                                                                                            \
+            "positive": "",                                                                                                            \
+            "valid_min": "",                                                                                                           \
+            "valid_max": "",                                                                                                           \
+            "ok_min_mean_abs": "",                                                                                                     \
+            "ok_max_mean_abs": ""                                                                                                      \
+        },                                                                                                                             \
+        "cLandYr": {                                                                                                                   \
+            "frequency": "yr",                                                                                                         \
+            "modeling_realm": "land",                                                                                                  \
+            "standard_name": "mass_content_of_carbon_in_vegetation_and_litter_and_soil_and_forestry_and_agricultural_products",        \
+            "units": "kg m-2",                                                                                                         \
+            "cell_methods": "area: mean where land time: mean",                                                                        \
+            "cell_measures": "area: areacella",                                                                                        \
+            "long_name": "Total Carbon in All Terrestrial Carbon Pools",                                                               \
+            "comment": "Report missing data over ocean grid cells. For fractional land report value averaged over the land fraction.", \
+            "dimensions": "longitude latitude time",                                                                                   \
+            "out_name": "cLandYr",                                                                                                     \
+            "type": "real",                                                                                                            \
+            "positive": "",                                                                                                            \
+            "valid_min": "",                                                                                                           \
+            "valid_max": "",                                                                                                           \
+            "ok_min_mean_abs": "",                                                                                                     \
+            "ok_max_mean_abs": ""                                                                                                      \
+        },
+  ' ${table_file_OptLyr}
 
   grep -A 16 -e '"pastureFrac":' CMIP6_Lmon.json                           >> ${table_file_OptLyr}  # Eyr    pastureFrac => LPJGyr    # Only Lmon pastureFrac
   sed -i -e 's/mon/yr/'                                                       ${table_file_OptLyr}
@@ -630,7 +630,6 @@ if [ "$#" -eq 3 ]; then
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Optday}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptOmon}
 
-  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Eyr}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Emon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptLyr}
   if [ ${extra_ece} == 'extra-ece' ]; then
@@ -651,7 +650,6 @@ if [ "$#" -eq 3 ]; then
    echo "  $0 ${do_clean} ${mip_era} ${extra_ece}"
    echo " has adjusted the files:"
    echo "  ${table_path}/${table_file_cv}"
-   echo "  ${table_path}/${table_file_Eyr}"
    echo "  ${table_path}/${table_file_Emon}"
    echo " and added the files:"
    echo "  ${table_path}/${table_file_OptSIday}"
