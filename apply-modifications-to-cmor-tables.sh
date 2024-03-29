@@ -135,25 +135,6 @@ if [ "$#" -eq 3 ]; then
   table_file_HTESSELmon=CMIP6_HTESSELmon.json
 
   cd ${table_path}
-  if [ ${do_clean} == 'clean-before' ]; then
-   git checkout ${table_file_cv}
-  #git checkout ${table_file_SIday}
-   git checkout ${table_file_SImon}
-   git checkout ${table_file_Omon}
-
-   git checkout ${table_file_Eyr}
-   git checkout ${table_file_Emon}
-
-  #echo "Cleaning the repository from unversioned files:"
-   rm -f ${table_file_OptLyr}
-   if [ ${extra_ece} == 'extra-ece' ]; then
-    rm -f ${table_file_LPJGday}
-    rm -f ${table_file_LPJGmon}
-    rm -f ${table_file_HTESSELday}
-    rm -f ${table_file_HTESSELmon}
-   fi
-  fi
-
 
   # Taken from add-nemo-variables.sh:
 
@@ -578,7 +559,7 @@ if [ "$#" -eq 3 ]; then
 
    echo
    echo " Running:"
-   echo "  $0 ${do_clean} ${mip_era}"
+   echo "  $0 ${do_clean} ${mip_era} ${extra_ece}"
    echo " has adjusted the files:"
    echo "  ${table_path}/${table_file_cv}"
   #echo "  ${table_path}/${table_file_SIday}"
@@ -641,7 +622,7 @@ if [ "$#" -eq 3 ]; then
 
    echo
    echo " Running:"
-   echo "  $0 ${do_clean} ${mip_era}"
+   echo "  $0 ${do_clean} ${mip_era} ${extra_ece}"
    echo
    echo " The following ${mip_era} directories have been created:"
    echo "  OptimESM_CVs/"
