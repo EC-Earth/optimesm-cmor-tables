@@ -14,6 +14,77 @@
 # A few variables not included yet:
 #  grep -e LandCoverFrac -e sialb -e snowfracn ${HOME}/cmorize/ece2cmor3/ece2cmor3/scripts/add*.sh
 
+
+# See        https://github.com/EC-Earth/optimesm-cmor-tables/
+# See #1333  https://dev.ec-earth.org/issues/1333
+
+# Taking benefit from the work for the OptimESM project with EC-Earth3-ESM-1
+
+# Overview of added seaIce variables:
+#  See #811       https://github.com/EC-Earth/ece2cmor3/issues/811
+#  See #814       https://github.com/EC-Earth/ece2cmor3/issues/814
+#  See #1312-146  https://dev.ec-earth.org/issues/1312#note-146
+#  Add:
+#   SIday sishevel   field_ref="ishear"   SImon sishevel   is taken as basis
+#   SIday sidconcdyn field_ref="afxdyn"   SImon sidconcdyn is taken as basis
+#   SIday sidconcth  field_ref="afxthd"   SImon sidconcth  is taken as basis
+#   SIday sidivvel   field_ref="idive"    SImon sidivvel   is taken as basis
+#   SIday sidmassdyn field_ref="dmidyn"   SImon sidmassdyn is taken as basis
+#   SIday sidmassth  field_ref="dmithd"   SImon sidmassth  is taken as basis
+#   SIday sirdgconc  field_ref="dummy_XY" SImon sirdgconc  is taken as basis  # not available for ECE (not identified in NEMO)
+
+# Overview of added ECE LPJG variables:
+#  See #778      https://github.com/EC-Earth/ece2cmor3/issues/#778
+#  See #794      https://github.com/EC-Earth/ece2cmor3/issues/794
+#  See #1312-11  https://dev.ec-earth.org/issues/1312#note-11
+#  See #1312-76  https://dev.ec-earth.org/issues/1312#note-76
+#  Add:
+#   Eyr  cFluxYr
+#   Eyr  cLandYr
+#   Emon cLand1st
+#  Add all water related variables and tsl to new created LPJG CMOR tables,
+#  because the same variables delivered by HTESSEL have the preference as
+#  they are consistant with the atmosphere.
+#   Eday  ec          => LPJGday  prio 1, in ignore file because IFS can't deliver
+#         mrsll       => LPJGday
+#   Eday  mrso        => LPJGday
+#   Eday  mrsol       => LPJGday
+#   Eday  mrsos       => LPJGday
+#   Eday  mrro        => LPJGday
+#         tran        => LPJGday
+#         tsl         => LPJGday
+#   Amon  evspsbl     => LPJGmon
+#   Emon  evspsblpot  => LPJGmon
+#         evspsblsoi  => LPJGmon
+#   Emon  mrroLut     => LPJGmon
+#         mrsll       => LPJGmon
+#         mrsol       => LPJGmon
+#         mrsoLut     => LPJGmon
+#         mrsosLut    => LPJGmon
+#         mrro        => LPJGmon
+#         mrros       => LPJGmon
+#         mrso        => LPJGmon
+#         mrfso       => LPJGmon
+#         mrsos       => LPJGmon
+#   Llmon snc         => LPJGmon
+#   Llmon snd         => LPJGmon
+#   Llmon snw         => LPJGmon
+#         tran        => LPJGmon
+#         tsl         => LPJGmon
+#   Eyr   pastureFrac => LPJGyr
+
+# Overview of added ECE HTESSEL variables:
+#  See #802       https://github.com/EC-Earth/ece2cmor3/issues/#802
+#  See #1312-106  https://dev.ec-earth.org/issues/1312#note-106
+
+#  Overview of added variables:
+#  https://codes.ecmwf.int/grib/param-db/27 27.128 Low  vegetation cover (cvl)               HTESSSELmon cvl    Lmon c3PftFrac is taken as basis
+#  https://codes.ecmwf.int/grib/param-db/28 28.128 High vegetation cover (cvh)               HTESSSELmon cvh    Lmon c3PftFrac is taken as basis
+#  https://codes.ecmwf.int/grib/param-db/29 29.128 Type of low vegetation (tvl)              HTESSSELmon tvl    Lmon c3PftFrac is taken as basis
+#  https://codes.ecmwf.int/grib/param-db/30 30.128 Type of high vegetation (tvh)             HTESSSELmon tvh    Lmon c3PftFrac is taken as basis
+#  https://codes.ecmwf.int/grib/param-db/66 66.128 Leaf area index, low vegetation (laiLv)   HTESSSELmon laiLv  Lmon lai       is taken as basis
+#  https://codes.ecmwf.int/grib/param-db/67 67.128 Leaf area index, high vegetation (laiHv)  HTESSSELmon laiHv  Lmon lai       is taken as basis
+
 script_call_instruction_message () {
   echo
   echo " This scripts requires three arguments:"
@@ -33,9 +104,8 @@ if [ "$#" -eq 3 ]; then
  extra_ece=$3
  mip_era_lowercase=${mip_era,,} # Convert entire string to lower case
 
- if [ ${do_clean} == 'clean-before' ] || [ ${do_clean} == 'no-clean-before' ]  [ ${extra_ece} == 'extra-ece' ] || [ ${extra_ece} == 'no-extra-ece' ]; then
-  # See #1     https://github.com/EC-Earth/optimesm-cmor-tables/issues/#1
-  # See #1333  https://dev.ec-earth.org/issues/1333
+ if [ ${do_clean}  == 'clean-before' ] || [ ${do_clean}  == 'no-clean-before' ]  \
+    [ ${extra_ece} == 'extra-ece'    ] || [ ${extra_ece} == 'no-extra-ece'    ]; then
 
   if [ ${do_clean} == 'clean-before' ]; then
    ./revert-modifications-to-cmor-tables.sh
@@ -43,25 +113,6 @@ if [ "$#" -eq 3 ]; then
 
   # Download / sync the submodule: the CV repository:
   git submodule update --init --recursive
-
-  # Taking benefit from the work for the OptimESM project with EC-Earth3-ESM-1
-  # See #811       https://github.com/EC-Earth/ece2cmor3/issues/811
-  # See #814       https://github.com/EC-Earth/ece2cmor3/issues/814
-  # See #1312-146  https://dev.ec-earth.org/issues/1312#note-146
-
-  # See #778      https://github.com/EC-Earth/ece2cmor3/issues/#778
-  # See #794      https://github.com/EC-Earth/ece2cmor3/issues/794
-  # See #1312-11  https://dev.ec-earth.org/issues/1312#note-11
-  # See #1312-76  https://dev.ec-earth.org/issues/1312#note-76
-
-  # Overview of added seaIce variables:
-  #  SIday sishevel   field_ref="ishear"   SImon sishevel   is taken as basis
-  #  SIday sidconcdyn field_ref="afxdyn"   SImon sidconcdyn is taken as basis
-  #  SIday sidconcth  field_ref="afxthd"   SImon sidconcth  is taken as basis
-  #  SIday sidivvel   field_ref="idive"    SImon sidivvel   is taken as basis
-  #  SIday sidmassdyn field_ref="dmidyn"   SImon sidmassdyn is taken as basis
-  #  SIday sidmassth  field_ref="dmithd"   SImon sidmassth  is taken as basis
-  #  SIday sirdgconc  field_ref="dummy_XY" SImon sirdgconc  is taken as basis  # not available for ECE (not identified in NEMO)
 
   table_path=./Tables
   cv_path=CMIP6_CVs
