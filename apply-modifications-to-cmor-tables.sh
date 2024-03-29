@@ -132,6 +132,7 @@ if [ "$#" -eq 3 ]; then
   table_file_Omon=CMIP6_Omon.json
   table_file_OptSIday=CMIP6_OptSIday.json
   table_file_Optday=CMIP6_Optday.json
+  table_file_OptOmon=CMIP6_OptOmon.json
 
   table_file_Eyr=CMIP6_Eyr.json
   table_file_Emon=CMIP6_Emon.json
@@ -259,71 +260,17 @@ if [ "$#" -eq 3 ]; then
   sed -i -e 's/Table day/Table Optday/'                                                                       ${table_file_Optday}
 
 
+  # Add the Omon variables in a separate table:
+  sed -i  '/"OptSIday"/i \
+            "OptOmon",
+  ' ${table_file_cv}
+
+
+  # Add CMIP6_Omon.json header:
+  head -n 16 ${table_file_Omon}                                                                            >  ${table_file_OptOmon}
+
   # Add four ocean variables to the Omon table:
-  sed -i  '/"umo": {/i \
-        "ubar": {                                                                               \
-            "frequency": "mon",                                                                 \
-            "modeling_realm": "ocean",                                                          \
-            "standard_name": "ocean_barotropic_current_along_i_axis",                           \
-            "units": "m s-1",                                                                   \
-            "cell_methods": "area: mean where sea time: mean",                                  \
-            "cell_measures": "area: areacello",                                                 \
-            "long_name": "Ocean Barotropic Current along i-axis",                               \
-            "comment": "",                                                                      \
-            "dimensions": "longitude latitude time",                                            \
-            "out_name": "ubar",                                                                 \
-            "type": "real",                                                                     \
-            "positive": "",                                                                     \
-            "valid_min": "",                                                                    \
-            "valid_max": "",                                                                    \
-            "ok_min_mean_abs": "",                                                              \
-            "ok_max_mean_abs": ""                                                               \
-        },
-  ' ${table_file_Omon}
-
-  sed -i  '/"vmo": {/i \
-        "vbar": {                                                                               \
-            "frequency": "mon",                                                                 \
-            "modeling_realm": "ocean",                                                          \
-            "standard_name": "ocean_barotropic_current_along_j_axis",                           \
-            "units": "m s-1",                                                                   \
-            "cell_methods": "area: mean where sea time: mean",                                  \
-            "cell_measures": "area: areacello",                                                 \
-            "long_name": "Ocean Barotropic Current along j-axis",                               \
-            "comment": "",                                                                      \
-            "dimensions": "longitude latitude time",                                            \
-            "out_name": "vbar",                                                                 \
-            "type": "real",                                                                     \
-            "positive": "",                                                                     \
-            "valid_min": "",                                                                    \
-            "valid_max": "",                                                                    \
-            "ok_min_mean_abs": "",                                                              \
-            "ok_max_mean_abs": ""                                                               \
-        },
-  ' ${table_file_Omon}
-
-  sed -i  '/"mlotst": {/i \
-        "mlddzt": {                                                                             \
-            "frequency": "mon",                                                                 \
-            "modeling_realm": "ocean",                                                          \
-            "standard_name": "thermocline_depth",                                               \
-            "units": "m",                                                                       \
-            "cell_methods": "area: mean where sea time: mean",                                  \
-            "cell_measures": "area: areacello",                                                 \
-            "long_name": "Thermocline Depth (depth of max dT/dz)",                              \
-            "comment": "depth at maximum upward derivative of sea water potential temperature", \
-            "dimensions": "longitude latitude time",                                            \
-            "out_name": "mlddzt",                                                               \
-            "type": "real",                                                                     \
-            "positive": "",                                                                     \
-            "valid_min": "",                                                                    \
-            "valid_max": "",                                                                    \
-            "ok_min_mean_abs": "",                                                              \
-            "ok_max_mean_abs": ""                                                               \
-        },
-  ' ${table_file_Omon}
-
-  sed -i  '/"hfbasin": {/i \
+  sed -i  '/"variable_entry": {/a \
         "hcont300": {                                                                           \
             "frequency": "mon",                                                                 \
             "modeling_realm": "ocean",                                                          \
@@ -341,8 +288,68 @@ if [ "$#" -eq 3 ]; then
             "valid_max": "",                                                                    \
             "ok_min_mean_abs": "",                                                              \
             "ok_max_mean_abs": ""                                                               \
-        },
-  ' ${table_file_Omon}
+        },                                                                                      \
+        "mlddzt": {                                                                             \
+            "frequency": "mon",                                                                 \
+            "modeling_realm": "ocean",                                                          \
+            "standard_name": "thermocline_depth",                                               \
+            "units": "m",                                                                       \
+            "cell_methods": "area: mean where sea time: mean",                                  \
+            "cell_measures": "area: areacello",                                                 \
+            "long_name": "Thermocline Depth (depth of max dT/dz)",                              \
+            "comment": "depth at maximum upward derivative of sea water potential temperature", \
+            "dimensions": "longitude latitude time",                                            \
+            "out_name": "mlddzt",                                                               \
+            "type": "real",                                                                     \
+            "positive": "",                                                                     \
+            "valid_min": "",                                                                    \
+            "valid_max": "",                                                                    \
+            "ok_min_mean_abs": "",                                                              \
+            "ok_max_mean_abs": ""                                                               \
+        },                                                                                      \
+        "ubar": {                                                                               \
+            "frequency": "mon",                                                                 \
+            "modeling_realm": "ocean",                                                          \
+            "standard_name": "ocean_barotropic_current_along_i_axis",                           \
+            "units": "m s-1",                                                                   \
+            "cell_methods": "area: mean where sea time: mean",                                  \
+            "cell_measures": "area: areacello",                                                 \
+            "long_name": "Ocean Barotropic Current along i-axis",                               \
+            "comment": "",                                                                      \
+            "dimensions": "longitude latitude time",                                            \
+            "out_name": "ubar",                                                                 \
+            "type": "real",                                                                     \
+            "positive": "",                                                                     \
+            "valid_min": "",                                                                    \
+            "valid_max": "",                                                                    \
+            "ok_min_mean_abs": "",                                                              \
+            "ok_max_mean_abs": ""                                                               \
+        },                                                                                      \
+        "vbar": {                                                                               \
+            "frequency": "mon",                                                                 \
+            "modeling_realm": "ocean",                                                          \
+            "standard_name": "ocean_barotropic_current_along_j_axis",                           \
+            "units": "m s-1",                                                                   \
+            "cell_methods": "area: mean where sea time: mean",                                  \
+            "cell_measures": "area: areacello",                                                 \
+            "long_name": "Ocean Barotropic Current along j-axis",                               \
+            "comment": "",                                                                      \
+            "dimensions": "longitude latitude time",                                            \
+            "out_name": "vbar",                                                                 \
+            "type": "real",                                                                     \
+            "positive": "",                                                                     \
+            "valid_min": "",                                                                    \
+            "valid_max": "",                                                                    \
+            "ok_min_mean_abs": "",                                                              \
+            "ok_max_mean_abs": ""                                                               \
+        }
+  ' ${table_file_OptOmon}
+
+  # Add closing part of CMIP6 table json file:
+  echo '    } '                                                                                            >> ${table_file_OptOmon}
+  echo '} '                                                                                                >> ${table_file_OptOmon}
+
+  sed -i -e 's/Table Omon/Table OptOmon/'                                                                     ${table_file_OptOmon}
 
 
   # Taken from add-lpjg-cc-diagnostics.sh:
@@ -604,11 +611,10 @@ if [ "$#" -eq 3 ]; then
 
   # Remove the trailing spaces of the inserted block above:
   sed -i -e 's/\s*$//g'                ${table_file_cv}
- #sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SIday}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_SImon}
-  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Omon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptSIday}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Optday}
+  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptOmon}
 
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Eyr}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Emon}
@@ -632,13 +638,18 @@ if [ "$#" -eq 3 ]; then
    echo " has adjusted the files:"
    echo "  ${table_path}/${table_file_cv}"
    echo "  ${table_path}/${table_file_SImon}"
-   echo "  ${table_path}/${table_file_Omon}"
    echo "  ${table_path}/${table_file_Eyr}"
    echo "  ${table_path}/${table_file_Emon}"
    echo " and added the files:"
+   echo "  ${table_path}/${table_file_OptSIday}"
+   echo "  ${table_path}/${table_file_Optday}"
+   echo "  ${table_path}/${table_file_OptOmon}"
+   echo "  ${table_path}/${table_file_OptLyr}"
    if [ ${extra_ece} == 'extra-ece' ]; then
     echo "  ${table_path}/${table_file_LPJGday}"
     echo "  ${table_path}/${table_file_LPJGmon}"
+    echo "  ${table_path}/${table_file_HTESSELday}"
+    echo "  ${table_path}/${table_file_HTESSELmon}"
    fi
    echo "  ${table_path}/${table_file_OptLyr}"
    echo " This changes can be reverted by running:"
