@@ -43,14 +43,15 @@ if [ "$#" -eq 0 ]; then
  fi
 
  # Remove unversioned table files if present:
+ echo
+ echo "Cleaning the Tables directory from unversioned files:"
  git clean -f
+ echo
 
  # Revert any modifications to the archived files:
+ echo "Revert all changes in the Tables directory:"
  git checkout *
  cd -
-
- # Remove the new tables:
-#rm -rf *-tables
 
 else
  echo
