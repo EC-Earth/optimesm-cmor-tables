@@ -130,13 +130,17 @@ if [ "$#" -eq 3 ]; then
   table_file_SImon=CMIP6_SImon.json
   table_file_day=CMIP6_day.json
   table_file_Omon=CMIP6_Omon.json
+  table_file_Lmon=CMIP6_Lmon.json
+  table_file_Emon=CMIP6_Emon.json
+  table_file_Amon=CMIP6_Amon.json
+  table_file_LImon=CMIP6_LImon.json
+  table_file_Eday=CMIP6_Eday.json
+
   table_file_OptSIday=CMIP6_OptSIday.json
   table_file_OptSImon=CMIP6_OptSImon.json
   table_file_Optday=CMIP6_Optday.json
   table_file_OptOmon=CMIP6_OptOmon.json
-
-  table_file_Emon=CMIP6_Emon.json
-
+  table_file_OptLmon=CMIP6_OptLmon.json
   table_file_OptLyr=CMIP6_OptLyr.json
 
   table_file_LPJGday=CMIP6_LPJGday.json
@@ -367,7 +371,16 @@ if [ "$#" -eq 3 ]; then
 
   # Taken from add-lpjg-cc-diagnostics.sh:
 
-  sed -i  '/"cLitterCwd": {/i \
+  # Add the Emon/Lmon variables in a separate table:
+  sed -i  '/"Omon"/a \
+            "OptLmon",
+  ' ${table_file_cv}
+
+  # Add CMIP6_Lmon.json header:
+  head -n 16 ${table_file_Lmon}                                                                            >  ${table_file_OptLmon}
+
+  # Add four ocean variables to the Omon table:
+  sed -i  '/"variable_entry": {/a \
         "cLand1st": {                                                                                                                  \
             "frequency": "mon",                                                                                                        \
             "modeling_realm": "land",                                                                                                  \
@@ -385,15 +398,18 @@ if [ "$#" -eq 3 ]; then
             "valid_max": "",                                                                                                           \
             "ok_min_mean_abs": "",                                                                                                     \
             "ok_max_mean_abs": ""                                                                                                      \
-        },
-  ' ${table_file_Emon}
+        }
+  ' ${table_file_OptLmon}
 
+  # Add closing part of CMIP6 table json file:
+  echo '    } '                                                                                            >> ${table_file_OptLmon}
+  echo '} '                                                                                                >> ${table_file_OptLmon}
 
-
+  sed -i -e 's/Table Lmon/Table OptLmon/'                                                                     ${table_file_OptLmon}
 
 
   # Adding the OptLyr (LPJGyr) table:
-  sed -i  '/"Omon"/a \
+  sed -i  '/"OptLmon"/a \
             "OptLyr",
   ' ${table_file_cv}
 
@@ -416,7 +432,7 @@ if [ "$#" -eq 3 ]; then
   echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_OptLyr}
 
   # CHECK metadata: comment - ocean cells
-  # The Eyr cFluxYr & cLandYr (from add-lpjg-cc-diagnostics.sh) have been added to the OptLyr table:
+  # The Eyr cFluxYr & cLandYr have been added to the OptLyr table:
   sed -i  '/"variable_entry": {/a \
         "cFluxYr": {                                                                                                                   \
             "frequency": "yr",                                                                                                         \
@@ -456,7 +472,7 @@ if [ "$#" -eq 3 ]; then
         },
   ' ${table_file_OptLyr}
 
-  grep -A 16 -e '"pastureFrac":' CMIP6_Lmon.json                           >> ${table_file_OptLyr}  # Eyr    pastureFrac => LPJGyr    # Only Lmon pastureFrac
+  grep -A 16 -e '"pastureFrac":' ${table_file_Lmon}                        >> ${table_file_OptLyr}  # Eyr    pastureFrac => LPJGyr    # Only Lmon pastureFrac
   sed -i -e 's/mon/yr/'                                                       ${table_file_OptLyr}
 
   # Add closing part of CMIP6 table json file:
@@ -490,14 +506,14 @@ if [ "$#" -eq 3 ]; then
    echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
    echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
 
-   grep -A 17 -e '"ec":'    CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #  Eday  ec          => LPJGday
-   grep -A 17 -e '"mrsll":' CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        mrsll       => LPJGday   Eday
-   grep -A 17 -e '"mrso":'  CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrso        => LPJGday
-   grep -A 17 -e '"mrsol":' CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #  Eday  mrsol       => LPJGday
-   grep -A 17 -e '"mrsos":' CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrsos       => LPJGday
-   grep -A 17 -e '"mrro":'  CMIP6_day.json                                  >> ${table_file_LPJGday}  #  Eday  mrro        => LPJGday
-   grep -A 17 -e '"tran":'  CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        tran        => LPJGday
-   grep -A 16 -e '"tsl":'   CMIP6_Eday.json                                 >> ${table_file_LPJGday}  #        tsl         => LPJGday
+   grep -A 17 -e '"ec":'    ${table_file_Eday}                              >> ${table_file_LPJGday}  #  Eday  ec          => LPJGday
+   grep -A 17 -e '"mrsll":' ${table_file_Eday}                              >> ${table_file_LPJGday}  #        mrsll       => LPJGday   Eday
+   grep -A 17 -e '"mrso":'  ${table_file_day}                               >> ${table_file_LPJGday}  #  Eday  mrso        => LPJGday
+   grep -A 17 -e '"mrsol":' ${table_file_Eday}                              >> ${table_file_LPJGday}  #  Eday  mrsol       => LPJGday
+   grep -A 17 -e '"mrsos":' ${table_file_day}                               >> ${table_file_LPJGday}  #  Eday  mrsos       => LPJGday
+   grep -A 17 -e '"mrro":'  ${table_file_day}                               >> ${table_file_LPJGday}  #  Eday  mrro        => LPJGday
+   grep -A 17 -e '"tran":'  ${table_file_Eday}                              >> ${table_file_LPJGday}  #        tran        => LPJGday
+   grep -A 16 -e '"tsl":'   ${table_file_Eday}                              >> ${table_file_LPJGday}  #        tsl         => LPJGday
 
    # Add closing part of CMIP6 table json file:
    echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_LPJGday}
@@ -523,25 +539,25 @@ if [ "$#" -eq 3 ]; then
    echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
    echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
 
-   grep -A 17 -e '"evspsbl":'    CMIP6_Amon.json                            >> ${table_file_LPJGmon}  #  Amon  evspsbl     => LPJGmon
-   grep -A 17 -e '"evspsblpot":' CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #  Emon  evspsblpot  => LPJGmon
-   grep -A 17 -e '"evspsblsoi":' CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        evspsblsoi  => LPJGmon   Lmon
-   grep -A 17 -e '"fco2nat":'    CMIP6_Amon.json                            >> ${table_file_LPJGmon}  #                                 Amon
-   grep -A 17 -e '"mrroLut":'    CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #  Emon  mrroLut     => LPJGmon
-   grep -A 17 -e '"mrsll":'      CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsll       => LPJGmon   Emon
-   grep -A 17 -e '"mrsol":'      CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsol       => LPJGmon
-   grep -A 17 -e '"mrsoLut":'    CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsoLut     => LPJGmon
-   grep -A 17 -e '"mrsosLut":'   CMIP6_Emon.json                            >> ${table_file_LPJGmon}  #        mrsosLut    => LPJGmon
-   grep -A 17 -e '"mrro":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrro        => LPJGmon
-   grep -A 17 -e '"mrros":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrros       => LPJGmon
-   grep -A 17 -e '"mrso":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrso        => LPJGmon
-   grep -A 17 -e '"mrfso":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrfso       => LPJGmon
-   grep -A 17 -e '"mrsos":'      CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        mrsos       => LPJGmon
-   grep -A 17 -e '"snc":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snc         => LPJGmon
-   grep -A 17 -e '"snd":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snd         => LPJGmon
-   grep -A 17 -e '"snw":'        CMIP6_LImon.json                           >> ${table_file_LPJGmon}  #  Llmon snw         => LPJGmon
-   grep -A 17 -e '"tran":'       CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        tran        => LPJGmon
-   grep -A 16 -e '"tsl":'        CMIP6_Lmon.json                            >> ${table_file_LPJGmon}  #        tsl         => LPJGmon
+   grep -A 17 -e '"evspsbl":'    ${table_file_Amon}                         >> ${table_file_LPJGmon}  #  Amon  evspsbl     => LPJGmon
+   grep -A 17 -e '"evspsblpot":' ${table_file_Emon}                         >> ${table_file_LPJGmon}  #  Emon  evspsblpot  => LPJGmon
+   grep -A 17 -e '"evspsblsoi":' ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        evspsblsoi  => LPJGmon   Lmon
+   grep -A 17 -e '"fco2nat":'    ${table_file_Amon}                         >> ${table_file_LPJGmon}  #                                 Amon
+   grep -A 17 -e '"mrroLut":'    ${table_file_Emon}                         >> ${table_file_LPJGmon}  #  Emon  mrroLut     => LPJGmon
+   grep -A 17 -e '"mrsll":'      ${table_file_Emon}                         >> ${table_file_LPJGmon}  #        mrsll       => LPJGmon   Emon
+   grep -A 17 -e '"mrsol":'      ${table_file_Emon}                         >> ${table_file_LPJGmon}  #        mrsol       => LPJGmon
+   grep -A 17 -e '"mrsoLut":'    ${table_file_Emon}                         >> ${table_file_LPJGmon}  #        mrsoLut     => LPJGmon
+   grep -A 17 -e '"mrsosLut":'   ${table_file_Emon}                         >> ${table_file_LPJGmon}  #        mrsosLut    => LPJGmon
+   grep -A 17 -e '"mrro":'       ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        mrro        => LPJGmon
+   grep -A 17 -e '"mrros":'      ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        mrros       => LPJGmon
+   grep -A 17 -e '"mrso":'       ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        mrso        => LPJGmon
+   grep -A 17 -e '"mrfso":'      ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        mrfso       => LPJGmon
+   grep -A 17 -e '"mrsos":'      ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        mrsos       => LPJGmon
+   grep -A 17 -e '"snc":'        ${table_file_LImon}                        >> ${table_file_LPJGmon}  #  Llmon snc         => LPJGmon
+   grep -A 17 -e '"snd":'        ${table_file_LImon}                        >> ${table_file_LPJGmon}  #  Llmon snd         => LPJGmon
+   grep -A 17 -e '"snw":'        ${table_file_LImon}                        >> ${table_file_LPJGmon}  #  Llmon snw         => LPJGmon
+   grep -A 17 -e '"tran":'       ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        tran        => LPJGmon
+   grep -A 16 -e '"tsl":'        ${table_file_Lmon}                         >> ${table_file_LPJGmon}  #        tsl         => LPJGmon
 
    # Add closing part of CMIP6 table json file:
    echo '        }                                      ' | sed 's/\s*$//g' >> ${table_file_LPJGmon}
@@ -575,10 +591,10 @@ if [ "$#" -eq 3 ]; then
    echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_HTESSELday}
    echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_HTESSELday}
 
-   grep -A 17 -e '"c3PftFrac":' CMIP6_Lmon.json | sed -e 's/c3PftFrac/cvl/g' -e 's/area_fraction/cvl/'                               -e 's/"long_name": ".*"/"long_name": "Low vegetation cover"/'              -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/27)."/g'                  >> ${table_file_HTESSELday}
-   grep -A 17 -e '"c3PftFrac":' CMIP6_Lmon.json | sed -e 's/c3PftFrac/cvh/g' -e 's/area_fraction/cvh/'                               -e 's/"long_name": ".*"/"long_name": "High vegetation cover"/'             -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/28)."/g'                 >> ${table_file_HTESSELday}
-   grep -A 17 -e '"lai":'       CMIP6_Lmon.json | sed -e 's/lai/laiLv/g'     -e 's/leaf_area_index/leaf_area_index_low_vegetation/'  -e 's/"long_name": ".*"/"long_name": "Leaf area index, low vegetation"/'   -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/66)."/g'    >> ${table_file_HTESSELday}
-   grep -A 16 -e '"lai":'       CMIP6_Lmon.json | sed -e 's/lai/laiHv/g'     -e 's/leaf_area_index/leaf_area_index_high_vegetation/' -e 's/"long_name": ".*"/"long_name": "Leaf area index, high vegetation"/'  -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/67)."/g'   >> ${table_file_HTESSELday}
+   grep -A 17 -e '"c3PftFrac":' ${table_file_Lmon} | sed -e 's/c3PftFrac/cvl/g' -e 's/area_fraction/cvl/'                               -e 's/"long_name": ".*"/"long_name": "Low vegetation cover"/'              -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/27)."/g'                  >> ${table_file_HTESSELday}
+   grep -A 17 -e '"c3PftFrac":' ${table_file_Lmon} | sed -e 's/c3PftFrac/cvh/g' -e 's/area_fraction/cvh/'                               -e 's/"long_name": ".*"/"long_name": "High vegetation cover"/'             -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/28)."/g'                 >> ${table_file_HTESSELday}
+   grep -A 17 -e '"lai":'       ${table_file_Lmon} | sed -e 's/lai/laiLv/g'     -e 's/leaf_area_index/leaf_area_index_low_vegetation/'  -e 's/"long_name": ".*"/"long_name": "Leaf area index, low vegetation"/'   -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/66)."/g'    >> ${table_file_HTESSELday}
+   grep -A 16 -e '"lai":'       ${table_file_Lmon} | sed -e 's/lai/laiHv/g'     -e 's/leaf_area_index/leaf_area_index_high_vegetation/' -e 's/"long_name": ".*"/"long_name": "Leaf area index, high vegetation"/'  -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/67)."/g'   >> ${table_file_HTESSELday}
 
    sed -i -e 's/typec3pft/typeveg/' ${table_file_HTESSELday}
    sed -i -e 's/"mon"/"day"/'    ${table_file_HTESSELday}
@@ -607,12 +623,12 @@ if [ "$#" -eq 3 ]; then
    echo '    },                                         ' | sed 's/\s*$//g' >> ${table_file_HTESSELmon}
    echo '    "variable_entry": {                        ' | sed 's/\s*$//g' >> ${table_file_HTESSELmon}
 
-   grep -A 17 -e '"c3PftFrac":' CMIP6_Lmon.json | sed -e 's/c3PftFrac/cvl/g' -e 's/area_fraction/cvl/'                               -e 's/"long_name": ".*"/"long_name": "Low vegetation cover"/'              -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/27)."/g'                  >> ${table_file_HTESSELmon}
-   grep -A 17 -e '"c3PftFrac":' CMIP6_Lmon.json | sed -e 's/c3PftFrac/cvh/g' -e 's/area_fraction/cvh/'                               -e 's/"long_name": ".*"/"long_name": "High vegetation cover"/'             -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/28)."/g'                 >> ${table_file_HTESSELmon}
-   grep -A 17 -e '"c3PftFrac":' CMIP6_Lmon.json | sed -e 's/c3PftFrac/tvl/g' -e 's/area_fraction/tvl/'                               -e 's/"long_name": ".*"/"long_name": "Type of low vegetation"/'            -e 's/"units": ".*"/"units": "-"/'      -e 's/"comment": ".*"/"comment": "This parameter indicates the 10 types of low vegetation recognised by the ECMWF Integrated Forecasting System (see https:\/\/codes.ecmwf.int\/grib\/param-db\/29)."/g'                   >> ${table_file_HTESSELmon}
-   grep -A 17 -e '"c3PftFrac":' CMIP6_Lmon.json | sed -e 's/c3PftFrac/tvh/g' -e 's/area_fraction/tvh/'                               -e 's/"long_name": ".*"/"long_name": "Type of high vegetation"/'           -e 's/"units": ".*"/"units": "-"/'      -e 's/"comment": ".*"/"comment": "This parameter indicates the 6 types of high vegetation recognised by the ECMWF Integrated Forecasting System (see https:\/\/codes.ecmwf.int\/grib\/param-db\/30)."/g'                   >> ${table_file_HTESSELmon}
-   grep -A 17 -e '"lai":'       CMIP6_Lmon.json | sed -e 's/lai/laiLv/g'     -e 's/leaf_area_index/leaf_area_index_low_vegetation/'  -e 's/"long_name": ".*"/"long_name": "Leaf area index, low vegetation"/'   -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/66)."/g'    >> ${table_file_HTESSELmon}
-   grep -A 16 -e '"lai":'       CMIP6_Lmon.json | sed -e 's/lai/laiHv/g'     -e 's/leaf_area_index/leaf_area_index_high_vegetation/' -e 's/"long_name": ".*"/"long_name": "Leaf area index, high vegetation"/'  -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/67)."/g'   >> ${table_file_HTESSELmon}
+   grep -A 17 -e '"c3PftFrac":' ${table_file_Lmon} | sed -e 's/c3PftFrac/cvl/g' -e 's/area_fraction/cvl/'                               -e 's/"long_name": ".*"/"long_name": "Low vegetation cover"/'              -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/27)."/g'                  >> ${table_file_HTESSELmon}
+   grep -A 17 -e '"c3PftFrac":' ${table_file_Lmon} | sed -e 's/c3PftFrac/cvh/g' -e 's/area_fraction/cvh/'                               -e 's/"long_name": ".*"/"long_name": "High vegetation cover"/'             -e 's/"units": ".*"/"units": "0-1"/'    -e 's/"comment": ".*"/"comment": "This parameter is the fraction of the grid box (0-1) that is covered with vegetation that is classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/28)."/g'                 >> ${table_file_HTESSELmon}
+   grep -A 17 -e '"c3PftFrac":' ${table_file_Lmon} | sed -e 's/c3PftFrac/tvl/g' -e 's/area_fraction/tvl/'                               -e 's/"long_name": ".*"/"long_name": "Type of low vegetation"/'            -e 's/"units": ".*"/"units": "-"/'      -e 's/"comment": ".*"/"comment": "This parameter indicates the 10 types of low vegetation recognised by the ECMWF Integrated Forecasting System (see https:\/\/codes.ecmwf.int\/grib\/param-db\/29)."/g'                   >> ${table_file_HTESSELmon}
+   grep -A 17 -e '"c3PftFrac":' ${table_file_Lmon} | sed -e 's/c3PftFrac/tvh/g' -e 's/area_fraction/tvh/'                               -e 's/"long_name": ".*"/"long_name": "Type of high vegetation"/'           -e 's/"units": ".*"/"units": "-"/'      -e 's/"comment": ".*"/"comment": "This parameter indicates the 6 types of high vegetation recognised by the ECMWF Integrated Forecasting System (see https:\/\/codes.ecmwf.int\/grib\/param-db\/30)."/g'                   >> ${table_file_HTESSELmon}
+   grep -A 17 -e '"lai":'       ${table_file_Lmon} | sed -e 's/lai/laiLv/g'     -e 's/leaf_area_index/leaf_area_index_low_vegetation/'  -e 's/"long_name": ".*"/"long_name": "Leaf area index, low vegetation"/'   -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as low (see https:\/\/codes.ecmwf.int\/grib\/param-db\/66)."/g'    >> ${table_file_HTESSELmon}
+   grep -A 16 -e '"lai":'       ${table_file_Lmon} | sed -e 's/lai/laiHv/g'     -e 's/leaf_area_index/leaf_area_index_high_vegetation/' -e 's/"long_name": ".*"/"long_name": "Leaf area index, high vegetation"/'  -e 's/"units": ".*"/"units": "m2 m-2"/' -e 's/"comment": ".*"/"comment": "This parameter is the surface area of one side of all the leaves found over an area of land for vegetation classified as high (see https:\/\/codes.ecmwf.int\/grib\/param-db\/67)."/g'   >> ${table_file_HTESSELmon}
 
    sed -i -e 's/typec3pft/typeveg/' ${table_file_HTESSELmon}
 
@@ -629,8 +645,7 @@ if [ "$#" -eq 3 ]; then
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptSImon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Optday}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptOmon}
-
-  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_Emon}
+  sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptLmon}
   sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_OptLyr}
   if [ ${extra_ece} == 'extra-ece' ]; then
    sed -i -e 's/\s*$//g' -e 's/,$/, /g' ${table_file_LPJGday}
@@ -650,12 +665,12 @@ if [ "$#" -eq 3 ]; then
    echo "  $0 ${do_clean} ${mip_era} ${extra_ece}"
    echo " has adjusted the files:"
    echo "  ${table_path}/${table_file_cv}"
-   echo "  ${table_path}/${table_file_Emon}"
    echo " and added the files:"
    echo "  ${table_path}/${table_file_OptSIday}"
    echo "  ${table_path}/${table_file_OptSImon}"
    echo "  ${table_path}/${table_file_Optday}"
    echo "  ${table_path}/${table_file_OptOmon}"
+   echo "  ${table_path}/${table_file_OptLmon}"
    echo "  ${table_path}/${table_file_OptLyr}"
    if [ ${extra_ece} == 'extra-ece' ]; then
     echo "  ${table_path}/${table_file_LPJGday}"
